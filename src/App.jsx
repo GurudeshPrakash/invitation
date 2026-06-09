@@ -155,6 +155,13 @@ function App() {
 
   // Dual confetti cannon launcher
   const triggerGoldConfetti = () => {
+    // Play celebratory pop sound
+    const popAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-84.wav');
+    popAudio.volume = 0.55;
+    popAudio.play().catch(err => {
+      console.log('Audio pop sound blocked by browser policy:', err);
+    });
+
     const duration = 3.5 * 1000;
     const end = Date.now() + duration;
 
