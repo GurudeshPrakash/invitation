@@ -155,12 +155,58 @@ function App() {
 
   // Dual confetti cannon launcher
   const triggerGoldConfetti = () => {
-    // Play celebratory pop sound
-    const popAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-84.wav');
-    popAudio.volume = 0.55;
-    popAudio.play().catch(err => {
-      console.log('Audio pop sound blocked by browser policy:', err);
-    });
+    // Synthesize celebratory pop sound dynamically (100% reliable, zero CORS/network issues)
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext) {
+        const audioCtx = new AudioContext();
+        
+        // 1. Pop (low-to-high frequency sweep)
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        osc.type = 'sine';
+        const now = audioCtx.currentTime;
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.exponentialRampToValueAtTime(750, now + 0.12);
+        
+        gainNode.gain.setValueAtTime(0.5, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+        
+        osc.start(now);
+        osc.stop(now + 0.13);
+
+        // 2. High-frequency crackle/snap (adds real party popper texture)
+        const bufferSize = audioCtx.sampleRate * 0.05; // 0.05 seconds of noise
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.value = 1000;
+        
+        const noiseGain = audioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0.2, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+        
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(audioCtx.destination);
+        
+        noise.start(now);
+        noise.stop(now + 0.05);
+      }
+    } catch (e) {
+      console.log('Audio pop sound blocked or failed:', e);
+    }
 
     const duration = 3.5 * 1000;
     const end = Date.now() + duration;
@@ -301,7 +347,7 @@ function App() {
       {/* Hidden Audio Player */}
       <audio 
         ref={audioRef} 
-        src="https://assets.mixkit.co/music/preview/mixkit-dreaming-big-31.mp3" 
+        src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" 
         loop
       />
 
